@@ -549,6 +549,13 @@ main {
   color: rgba(207, 213, 255, 0.75);
 }
 
+.pill-group {
+  display: grid;
+  grid-auto-flow: column;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
 .live-meta {
   display: grid;
   gap: 18px;
@@ -1290,6 +1297,15 @@ main {
 
   .summary-grid {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .live-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .pill-group {
+    grid-auto-flow: row;
+    justify-items: flex-start;
   }
 }
 

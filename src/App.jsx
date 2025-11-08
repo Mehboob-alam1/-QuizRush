@@ -804,7 +804,7 @@ const legalContent = {
       },
       {
         heading: '7. Contact',
-        body: `Questions or concerns? Reach out to compliance@quizrush.com and we will respond within 30 days.`,
+        body: `Questions or concerns? Reach out to support@viralnews360.net and we will respond within 30 days.`,
       },
     ],
   },
@@ -1856,7 +1856,7 @@ function App() {
             { label: 'Partner with us', message: 'Partnership deck available on request. Email biz@quizrush.com.' },
             { label: 'Terms & Conditions', action: () => setActiveTab('terms') },
             { label: 'Privacy Policy', action: () => setActiveTab('privacy') },
-            { label: 'Support', message: 'Need help? Reach out at support@quizrush.com.' },
+            { label: 'Support', message: 'Need help? Reach out at support@viralnews360.net.' },
           ].map((item) => (
             <button
               key={item.label}
