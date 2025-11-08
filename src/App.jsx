@@ -739,6 +739,77 @@ const buttonTextByType = {
   referral: 'Referral',
 }
 
+const legalContent = {
+  terms: {
+    title: 'Terms & Conditions',
+    updated: 'Updated March 2025',
+    sections: [
+      {
+        heading: '1. Overview',
+        body: `QuizRush provides finance-themed trivia entertainment. By accessing or using the platform you agree to these Terms. If you disagree with any part, please discontinue using the site.`,
+      },
+      {
+        heading: '2. Eligibility & Accounts',
+        body: `You must be at least 13 years old and capable of entering into a binding agreement. You are responsible for maintaining the confidentiality of any login credentials and for all activities that occur under your account.`,
+      },
+      {
+        heading: '3. Virtual Coins & Rewards',
+        body: `Coins awarded on QuizRush have no cash value and are non-transferable. We may modify reward structures, leaderboards, or event formats at any time without liability.`,
+      },
+      {
+        heading: '4. Acceptable Use',
+        body: `Do not attempt to interfere with quizzes, scrape data, exploit bugs, or engage in abusive behavior. We reserve the right to suspend or terminate access for violations.`,
+      },
+      {
+        heading: '5. Intellectual Property',
+        body: `All trademarks, game mechanics, illustrations, and copy remain the property of QuizRush. You may not reuse or redistribute content without prior written consent.`,
+      },
+      {
+        heading: '6. Disclaimers',
+        body: `QuizRush is provided “as is.” We make no warranties regarding accuracy of quiz questions, availability of the service, or suitability of any educational tips provided.`,
+      },
+      {
+        heading: '7. Governing Law',
+        body: `These Terms are governed by the laws of the jurisdiction in which QuizRush Studios, Ltd. is registered. Disputes will be handled through binding arbitration unless prohibited by law.`,
+      },
+    ],
+  },
+  privacy: {
+    title: 'Privacy Policy',
+    updated: 'Updated March 2025',
+    sections: [
+      {
+        heading: '1. Data We Collect',
+        body: `We collect account information (email, username), gameplay telemetry (scores, streaks, quiz selections), and limited device data (browser, language, approximate region) to improve gameplay balance.`,
+      },
+      {
+        heading: '2. How We Use Data',
+        body: `Data enables personalized quiz recommendations, leaderboard scoring, fraud prevention, and aggregated analytics. We never sell personal information to third parties.`,
+      },
+      {
+        heading: '3. Cookies & Tracking',
+        body: `We use essential cookies for session management and optional analytics cookies to understand feature usage. Advertiser scripts (such as AdSense) run only after consent where required.`,
+      },
+      {
+        heading: '4. Sharing & Third Parties',
+        body: `We may share limited data with infrastructure providers (hosting, analytics, customer support). All partners adhere to confidentiality obligations aligned with this policy.`,
+      },
+      {
+        heading: '5. User Controls',
+        body: `You may update profile information, request data exports, or ask for deletion by emailing privacy@quizrush.com. Deletion requests may impact leaderboard standing and rewards history.`,
+      },
+      {
+        heading: '6. Security',
+        body: `Industry best practices such as encryption in transit, secure credential hashing, and least-privilege access are applied. No method is 100% secure, but we continuously monitor for anomalies.`,
+      },
+      {
+        heading: '7. Contact',
+        body: `Questions or concerns? Reach out to compliance@quizrush.com and we will respond within 30 days.`,
+      },
+    ],
+  },
+}
+
 const AdSlot = ({ slot, format = 'auto', responsive = 'true', layoutKey }) => {
   useEffect(() => {
     if (
@@ -1688,9 +1759,39 @@ function App() {
         return renderLeaderboard()
       case 'dashboard':
         return renderDashboard()
+      case 'terms':
+        return renderLegalPage('terms')
+      case 'privacy':
+        return renderLegalPage('privacy')
       default:
         return renderHome()
     }
+  }
+
+  const renderLegalPage = (type) => {
+    const content = legalContent[type]
+    if (!content) return renderHome()
+    return (
+      <section className="panel legal-panel" aria-labelledby={`${type}-heading`}>
+        <header className="legal-header">
+          <button className="link-button" onClick={() => setActiveTab('home')}>
+            ← Back to home
+          </button>
+          <div>
+            <span className="eyebrow">{content.updated}</span>
+            <h2 id={`${type}-heading`}>{content.title}</h2>
+          </div>
+        </header>
+        <div className="legal-body">
+          {content.sections.map((section) => (
+            <article key={section.heading} className="legal-section">
+              <h3>{section.heading}</h3>
+              <p>{section.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+    )
   }
 
   return (
@@ -1753,14 +1854,21 @@ function App() {
           {[
             { label: 'Community', message: 'Community hub launches soon — stay tuned!' },
             { label: 'Partner with us', message: 'Partnership deck available on request. Email biz@quizrush.com.' },
-            { label: 'Ad policy', message: 'Our monetization guidelines are being finalized for the finance launch.' },
+            { label: 'Terms & Conditions', action: () => setActiveTab('terms') },
+            { label: 'Privacy Policy', action: () => setActiveTab('privacy') },
             { label: 'Support', message: 'Need help? Reach out at support@quizrush.com.' },
           ].map((item) => (
             <button
               key={item.label}
               type="button"
               className="footer-link"
-              onClick={() => triggerToast(item.message)}
+              onClick={() => {
+                if (item.action) {
+                  item.action()
+                } else if (item.message) {
+                  triggerToast(item.message)
+                }
+              }}
             >
               {item.label}
             </button>
