@@ -534,6 +534,7 @@ main {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  justify-content: center;
 }
 
 .pill {
@@ -550,10 +551,10 @@ main {
 }
 
 .pill-group {
-  display: grid;
-  grid-auto-flow: column;
-  justify-content: flex-start;
+  display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .live-meta {
@@ -1304,8 +1305,7 @@ main {
   }
 
   .pill-group {
-    grid-auto-flow: row;
-    justify-items: flex-start;
+    justify-content: flex-start;
   }
 }
 
