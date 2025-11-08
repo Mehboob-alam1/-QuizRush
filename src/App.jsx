@@ -751,6 +751,7 @@ function App() {
   const [answerFeedback, setAnswerFeedback] = useState(null)
   const nextQuestionTimeout = useRef(null)
   const isPlayMode = Boolean(currentQuiz && quizState.status !== 'idle')
+  const [showMobileNav, setShowMobileNav] = useState(false)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -833,6 +834,7 @@ function App() {
     }
     setActiveTab('live')
     triggerToast(`Loaded ${quiz.title}. Good luck!`)
+    setShowMobileNav(false)
   }
 
   const startQuizByCategory = (quizId) => {
@@ -1680,12 +1682,28 @@ function App() {
           </span>
           <span className="brand-name">QuizRush</span>
         </div>
-        <nav className="topbar-nav" aria-label="Primary">
+        <button
+          className="menu-button"
+          type="button"
+          aria-expanded={showMobileNav}
+          aria-controls="primary-navigation"
+          onClick={() => setShowMobileNav((prev) => !prev)}
+        >
+          {showMobileNav ? 'Close' : 'Menu'}
+        </button>
+        <nav
+          id="primary-navigation"
+          className={`topbar-nav ${showMobileNav ? 'topbar-nav--open' : ''}`}
+          aria-label="Primary"
+        >
           {['home', 'live', 'leaderboard', 'dashboard'].map((tab) => (
             <button
               key={tab}
               className={activeTab === tab ? 'nav-link nav-link--active' : 'nav-link'}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => {
+                setActiveTab(tab)
+                setShowMobileNav(false)
+              }}
             >
               {tab}
             </button>

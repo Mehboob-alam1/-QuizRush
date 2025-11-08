@@ -98,6 +98,17 @@
   gap: 14px;
 }
 
+.menu-button {
+  display: none;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f4f6ff;
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .coin-display {
   display: flex;
   align-items: center;
@@ -1168,15 +1179,52 @@ main {
     justify-content: center;
   }
 
+  .menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .topbar-nav {
     order: 3;
     width: 100%;
-    justify-content: center;
     margin: 0;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(13, 16, 40, 0.95);
+    border-radius: 16px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .topbar-nav--open {
+    display: flex;
   }
 
   .topbar-actions {
     order: 2;
+  }
+
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .category-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .live-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .leaderboard-header,
+  .leaderboard-row {
+    grid-template-columns: 70px 1fr 110px 80px;
+  }
+
+  .summary-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   }
 }
 
