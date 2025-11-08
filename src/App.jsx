@@ -803,18 +803,6 @@ function App() {
   const [showMobileNav, setShowMobileNav] = useState(false)
 
   useEffect(() => {
-    if (typeof document === 'undefined') return
-    if (ADSENSE_PUBLISHER_ID.endsWith('0000000000000000')) return
-    if (document.querySelector('script[data-adsbygoogle-script]')) return
-    const script = document.createElement('script')
-    script.async = true
-    script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUBLISHER_ID}`
-    script.crossOrigin = 'anonymous'
-    script.setAttribute('data-adsbygoogle-script', 'true')
-    document.head.appendChild(script)
-  }, [])
-
-  useEffect(() => {
     const timer = setInterval(() => {
       setCountdown(formatCountdown(nextShow))
     }, 1000)
@@ -1430,8 +1418,6 @@ function App() {
         </div>
       </section>
 
-      <AdSlot slot="1234567890" />
-
       <section className="panel section" aria-labelledby="schedule-heading">
         <div className="section-heading">
           <span className="eyebrow">Market lineup</span>
@@ -1462,8 +1448,6 @@ function App() {
           })}
         </div>
       </section>
-
-      <AdSlot slot="1234567891" />
 
       <section className="panel section" aria-labelledby="instant-heading">
         <div className="section-heading">
@@ -1811,8 +1795,6 @@ function App() {
           ))}
         </div>
       </footer>
-
-      <AdSlot slot="1234567892" />
 
       {showToast && <div className="toast">{showToast}</div>}
     </div>
