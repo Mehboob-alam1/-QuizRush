@@ -22,6 +22,9 @@ const blankQuizState = {
   rewardsApplied: false,
 }
 
+const ADSENSE_PUBLISHER_ID =
+  import.meta.env.VITE_ADSENSE_PUBLISHER_ID?.trim() || 'ca-pub-0000000000000000'
+
 const quizLibrary = [
   {
     id: 'global-markets-pro',
@@ -736,6 +739,52 @@ const buttonTextByType = {
   referral: 'Referral',
 }
 
+const AdSlot = ({ slot, format = 'auto', responsive = 'true', layoutKey }) => {
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      !slot ||
+      ADSENSE_PUBLISHER_ID.endsWith('0000000000000000')
+    ) {
+      return
+    }
+    try {
+      ;(window.adsbygoogle = window.adsbygoogle || []).push({})
+    } catch (error) {
+      console.warn('AdSense push error:', error)
+    }
+  }, [slot])
+
+  if (!slot) {
+    return null
+  }
+
+  if (ADSENSE_PUBLISHER_ID.endsWith('0000000000000000')) {
+    return (
+      <div className="ad-wrapper ad-wrapper--placeholder">
+        <p>
+          Replace <code>VITE_ADSENSE_PUBLISHER_ID</code> and ad slot IDs to display Google AdSense
+          ads here.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="ad-wrapper">
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block' }}
+        data-ad-client={ADSENSE_PUBLISHER_ID}
+        data-ad-slot={slot}
+        data-ad-format={format}
+        data-full-width-responsive={responsive}
+        {...(layoutKey ? { 'data-ad-layout-key': layoutKey } : {})}
+      />
+    </div>
+  )
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState('home')
   const [user, setUser] = useState(initialUser)
@@ -752,6 +801,18 @@ function App() {
   const nextQuestionTimeout = useRef(null)
   const isPlayMode = Boolean(currentQuiz && quizState.status !== 'idle')
   const [showMobileNav, setShowMobileNav] = useState(false)
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    if (ADSENSE_PUBLISHER_ID.endsWith('0000000000000000')) return
+    if (document.querySelector('script[data-adsbygoogle-script]')) return
+    const script = document.createElement('script')
+    script.async = true
+    script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUBLISHER_ID}`
+    script.crossOrigin = 'anonymous'
+    script.setAttribute('data-adsbygoogle-script', 'true')
+    document.head.appendChild(script)
+  }, [])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -1369,6 +1430,8 @@ function App() {
         </div>
       </section>
 
+      <AdSlot slot="1234567890" />
+
       <section className="panel section" aria-labelledby="schedule-heading">
         <div className="section-heading">
           <span className="eyebrow">Market lineup</span>
@@ -1399,6 +1462,8 @@ function App() {
           })}
         </div>
       </section>
+
+      <AdSlot slot="1234567891" />
 
       <section className="panel section" aria-labelledby="instant-heading">
         <div className="section-heading">
@@ -1746,6 +1811,8 @@ function App() {
           ))}
         </div>
       </footer>
+
+      <AdSlot slot="1234567892" />
 
       {showToast && <div className="toast">{showToast}</div>}
     </div>

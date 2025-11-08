@@ -1112,6 +1112,30 @@ main {
   color: #fff;
 }
 
+.ad-wrapper {
+  margin: 24px auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 120px;
+}
+
+.ad-wrapper ins {
+  display: block;
+  min-width: 250px;
+  min-height: 120px;
+}
+
+.ad-wrapper--placeholder {
+  padding: 24px;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  max-width: 420px;
+  text-align: center;
+  color: rgba(210, 219, 255, 0.7);
+  font-size: 14px;
+}
+
 .toast {
   position: fixed;
   bottom: 32px;
