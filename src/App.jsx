@@ -1331,34 +1331,6 @@ function App() {
               </div>
             </div>
           </div>
-          <div className="hero-showcase float-up">
-            <div className="countdown-card">
-              <span className="mini-label">Next live show</span>
-              <h3>{upcomingShows[0].title}</h3>
-              <p>{countdown.isLive ? 'Going live — tap to join!' : countdown.label}</p>
-              <div className="countdown-footer">
-                <span>{upcomingShows[0].reward}</span>
-                <span>{upcomingShows[0].host}</span>
-              </div>
-            </div>
-            <div className="live-preview">
-              <div className="live-header">
-                <span className="dot" />
-                <span>Live order book forming</span>
-                <span>2.4K waiting</span>
-              </div>
-              <div className="avatar-stack">
-                {['amelia', 'nova', 'tyke', 'skye'].map((id) => (
-                  <img
-                    key={id}
-                    src={`https://api.dicebear.com/7.x/identicon/svg?seed=${id}`}
-                    alt="avatar"
-                  />
-                ))}
-              </div>
-              <p>Tonight’s incentives: 2× alpha bonus, 1.5× portfolio XP.</p>
-            </div>
-          </div>
         </div>
       </section>
 
