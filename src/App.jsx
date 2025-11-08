@@ -819,30 +819,56 @@ const pushAd = () => {
 }
 
 const useAdSenseLoader = () => {
+  const [ready, setReady] = useState(false)
+
   useEffect(() => {
     if (typeof document === 'undefined') return
-    const existing = document.querySelector(`script[data-adsbygoogle-client="${ADSENSE_CLIENT}"]`)
-    if (existing) return
+
+    const handleReady = () => setReady(true)
+    const existing = document.querySelector(
+      `script[data-adsbygoogle-client="${ADSENSE_CLIENT}"]`,
+    )
+
+    if (existing) {
+      if (window.adsbygoogle && Array.isArray(window.adsbygoogle)) {
+        setReady(true)
+      } else {
+        existing.addEventListener('load', handleReady)
+      }
+      return () => {
+        existing.removeEventListener('load', handleReady)
+      }
+    }
+
     const script = document.createElement('script')
     script.async = true
     script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`
     script.crossOrigin = 'anonymous'
     script.setAttribute('data-adsbygoogle-client', ADSENSE_CLIENT)
+    script.onload = handleReady
+    script.onerror = () => setReady(false)
     document.head.appendChild(script)
+
+    return () => {
+      script.onload = null
+    }
   }, [])
+
+  return ready
 }
 
-const AutoAds = () => {
+const AutoAds = ({ ready }) => {
   useEffect(() => {
-    pushAd()
-  }, [])
+    if (ready) pushAd()
+  }, [ready])
   return null
 }
 
-const InArticleAd = () => {
+const InArticleAd = ({ ready }) => {
   useEffect(() => {
-    pushAd()
-  }, [])
+    if (ready) pushAd()
+  }, [ready])
+  if (!ready) return null
   return (
     <div className="ad-wrapper">
       <ins
@@ -857,10 +883,11 @@ const InArticleAd = () => {
   )
 }
 
-const SquareDisplayAd = () => {
+const SquareDisplayAd = ({ ready }) => {
   useEffect(() => {
-    pushAd()
-  }, [])
+    if (ready) pushAd()
+  }, [ready])
+  if (!ready) return null
   return (
     <div className="ad-wrapper">
       <ins
@@ -875,10 +902,11 @@ const SquareDisplayAd = () => {
   )
 }
 
-const BannerAd = () => {
+const BannerAd = ({ ready }) => {
   useEffect(() => {
-    pushAd()
-  }, [])
+    if (ready) pushAd()
+  }, [ready])
+  if (!ready) return null
   return (
     <div className="ad-wrapper">
       <ins
@@ -893,10 +921,11 @@ const BannerAd = () => {
   )
 }
 
-const MultiplexAd = () => {
+const MultiplexAd = ({ ready }) => {
   useEffect(() => {
-    pushAd()
-  }, [])
+    if (ready) pushAd()
+  }, [ready])
+  if (!ready) return null
   return (
     <div className="ad-wrapper">
       <ins
@@ -910,10 +939,11 @@ const MultiplexAd = () => {
   )
 }
 
-const PopupAd = () => {
+const PopupAd = ({ ready }) => {
   useEffect(() => {
-    pushAd()
-  }, [])
+    if (ready) pushAd()
+  }, [ready])
+  if (!ready) return null
   return (
     <div className="ad-wrapper">
       <ins
@@ -944,7 +974,7 @@ function App() {
   const nextQuestionTimeout = useRef(null)
   const isPlayMode = Boolean(currentQuiz && quizState.status !== 'idle')
   const [showMobileNav, setShowMobileNav] = useState(false)
-  useAdSenseLoader()
+  const adsReady = useAdSenseLoader()
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -1439,7 +1469,7 @@ function App() {
 
   const renderHome = () => (
     <>
-      <SquareDisplayAd />
+      <SquareDisplayAd ready={adsReady} />
       <section className="panel hero-panel">
         <div className="hero-grid">
           <div className="hero-copy fade-in">
@@ -1566,7 +1596,7 @@ function App() {
         </div>
       </section>
 
-      <BannerAd />
+      <BannerAd ready={adsReady} />
 
       <section className="panel section" aria-labelledby="instant-heading">
         <div className="section-heading">
@@ -1593,7 +1623,7 @@ function App() {
         </div>
       </section>
 
-      <InArticleAd />
+      <InArticleAd ready={adsReady} />
     </>
   )
 
@@ -1685,7 +1715,7 @@ function App() {
           </button>
         ))}
       </div>
-      <MultiplexAd />
+      <MultiplexAd ready={adsReady} />
     </section>
   )
 
@@ -1822,7 +1852,7 @@ function App() {
           </button>
         </article>
       </div>
-      <PopupAd />
+      <PopupAd ready={adsReady} />
     </section>
   )
 
@@ -1876,7 +1906,7 @@ function App() {
 
   return (
     <div className="page">
-      <AutoAds />
+      <AutoAds ready={adsReady} />
       <div className="background-glow" aria-hidden="true" />
       <header className="topbar">
         <div className="brand">
