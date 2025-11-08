@@ -22,8 +22,7 @@ const blankQuizState = {
   rewardsApplied: false,
 }
 
-const ADSENSE_PUBLISHER_ID =
-  import.meta.env.VITE_ADSENSE_PUBLISHER_ID?.trim() || 'ca-pub-0000000000000000'
+const ADSENSE_CLIENT = 'ca-pub-8028241846578443'
 
 const quizLibrary = [
   {
@@ -810,47 +809,120 @@ const legalContent = {
   },
 }
 
-const AdSlot = ({ slot, format = 'auto', responsive = 'true', layoutKey }) => {
+const pushAd = () => {
+  if (typeof window === 'undefined') return
+  try {
+    ;(window.adsbygoogle = window.adsbygoogle || []).push({})
+  } catch (error) {
+    console.warn('AdSense push error', error)
+  }
+}
+
+const useAdSenseLoader = () => {
   useEffect(() => {
-    if (
-      typeof window === 'undefined' ||
-      !slot ||
-      ADSENSE_PUBLISHER_ID.endsWith('0000000000000000')
-    ) {
-      return
-    }
-    try {
-      ;(window.adsbygoogle = window.adsbygoogle || []).push({})
-    } catch (error) {
-      console.warn('AdSense push error:', error)
-    }
-  }, [slot])
+    if (typeof document === 'undefined') return
+    const existing = document.querySelector(`script[data-adsbygoogle-client="${ADSENSE_CLIENT}"]`)
+    if (existing) return
+    const script = document.createElement('script')
+    script.async = true
+    script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`
+    script.crossOrigin = 'anonymous'
+    script.setAttribute('data-adsbygoogle-client', ADSENSE_CLIENT)
+    document.head.appendChild(script)
+  }, [])
+}
 
-  if (!slot) {
-    return null
-  }
+const AutoAds = () => {
+  useEffect(() => {
+    pushAd()
+  }, [])
+  return null
+}
 
-  if (ADSENSE_PUBLISHER_ID.endsWith('0000000000000000')) {
-    return (
-      <div className="ad-wrapper ad-wrapper--placeholder">
-        <p>
-          Replace <code>VITE_ADSENSE_PUBLISHER_ID</code> and ad slot IDs to display Google AdSense
-          ads here.
-        </p>
-      </div>
-    )
-  }
+const InArticleAd = () => {
+  useEffect(() => {
+    pushAd()
+  }, [])
+  return (
+    <div className="ad-wrapper">
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block', textAlign: 'center' }}
+        data-ad-layout="in-article"
+        data-ad-format="fluid"
+        data-ad-client={ADSENSE_CLIENT}
+        data-ad-slot="1258165403"
+      />
+    </div>
+  )
+}
 
+const SquareDisplayAd = () => {
+  useEffect(() => {
+    pushAd()
+  }, [])
   return (
     <div className="ad-wrapper">
       <ins
         className="adsbygoogle"
         style={{ display: 'block' }}
-        data-ad-client={ADSENSE_PUBLISHER_ID}
-        data-ad-slot={slot}
-        data-ad-format={format}
-        data-full-width-responsive={responsive}
-        {...(layoutKey ? { 'data-ad-layout-key': layoutKey } : {})}
+        data-ad-client={ADSENSE_CLIENT}
+        data-ad-slot="7270368660"
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      />
+    </div>
+  )
+}
+
+const BannerAd = () => {
+  useEffect(() => {
+    pushAd()
+  }, [])
+  return (
+    <div className="ad-wrapper">
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block' }}
+        data-ad-client={ADSENSE_CLIENT}
+        data-ad-slot="3119957393"
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      />
+    </div>
+  )
+}
+
+const MultiplexAd = () => {
+  useEffect(() => {
+    pushAd()
+  }, [])
+  return (
+    <div className="ad-wrapper">
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block' }}
+        data-ad-format="autorelaxed"
+        data-ad-client={ADSENSE_CLIENT}
+        data-ad-slot="9808940088"
+      />
+    </div>
+  )
+}
+
+const PopupAd = () => {
+  useEffect(() => {
+    pushAd()
+  }, [])
+  return (
+    <div className="ad-wrapper">
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block' }}
+        data-ad-client={ADSENSE_CLIENT}
+        data-ad-slot="6507951338"
+        data-ad-format="auto"
+        data-full-width-responsive="true"
       />
     </div>
   )
@@ -872,6 +944,7 @@ function App() {
   const nextQuestionTimeout = useRef(null)
   const isPlayMode = Boolean(currentQuiz && quizState.status !== 'idle')
   const [showMobileNav, setShowMobileNav] = useState(false)
+  useAdSenseLoader()
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -1366,6 +1439,7 @@ function App() {
 
   const renderHome = () => (
     <>
+      <SquareDisplayAd />
       <section className="panel hero-panel">
         <div className="hero-grid">
           <div className="hero-copy fade-in">
@@ -1492,6 +1566,8 @@ function App() {
         </div>
       </section>
 
+      <BannerAd />
+
       <section className="panel section" aria-labelledby="instant-heading">
         <div className="section-heading">
           <span className="eyebrow">Instant action</span>
@@ -1516,6 +1592,8 @@ function App() {
           ))}
         </div>
       </section>
+
+      <InArticleAd />
     </>
   )
 
@@ -1607,6 +1685,7 @@ function App() {
           </button>
         ))}
       </div>
+      <MultiplexAd />
     </section>
   )
 
@@ -1743,6 +1822,7 @@ function App() {
           </button>
         </article>
       </div>
+      <PopupAd />
     </section>
   )
 
@@ -1796,6 +1876,7 @@ function App() {
 
   return (
     <div className="page">
+      <AutoAds />
       <div className="background-glow" aria-hidden="true" />
       <header className="topbar">
         <div className="brand">
