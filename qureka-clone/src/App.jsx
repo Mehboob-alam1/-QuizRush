@@ -1,5 +1,179 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import './App.css'
+
+const ADSENSE_CLIENT = import.meta.env.VITE_ADSENSE_PUBLISHER_ID?.trim() || 'ca-pub-8028241846578443'
+
+const AD_SLOTS = Object.freeze({
+  display: '1673453593',
+  inArticle: '1258165403',
+  square: '7270368660',
+  banner: '3119957393',
+  multiplex: '9808940088',
+  popup: '6507951338',
+})
+
+const AD_LABELS = Object.freeze({
+  display: 'Sponsored display spotlight',
+  inArticle: 'Sponsored finance briefing',
+  square: 'Sponsored market widget',
+  banner: 'Sponsored trading banner',
+  multiplex: 'Sponsored analyst carousel',
+  popup: 'Sponsored alpha alert',
+})
+
+const AD_CLUSTER_PRESETS = Object.freeze({
+  standard: ['banner', 'banner', 'square', 'banner', 'square'],
+  stacked: ['banner', 'square', 'banner', 'square', 'banner'],
+  compact: ['square', 'banner', 'square', 'banner', 'square'],
+  wide: ['banner', 'banner', 'banner', 'banner', 'banner'],
+  square: ['square', 'square', 'square', 'square', 'square'],
+})
+
+const adConfig = Object.freeze({
+  display: { slot: AD_SLOTS.display, format: 'auto', fullWidthResponsive: true, style: { display: 'block' } },
+  inArticle: {
+    slot: AD_SLOTS.inArticle,
+    format: 'fluid',
+    layout: 'in-article',
+    fullWidthResponsive: false,
+    style: { display: 'block', textAlign: 'center' },
+  },
+  square: { slot: AD_SLOTS.square, format: 'auto', fullWidthResponsive: true, style: { display: 'block' } },
+  banner: { slot: AD_SLOTS.banner, format: 'auto', fullWidthResponsive: true, style: { display: 'block' } },
+  multiplex: {
+    slot: AD_SLOTS.multiplex,
+    format: 'autorelaxed',
+    fullWidthResponsive: true,
+    style: { display: 'block' },
+  },
+  popup: { slot: AD_SLOTS.popup, format: 'auto', fullWidthResponsive: true, style: { display: 'block' } },
+})
+
+const isAdClientConfigured = ADSENSE_CLIENT && !ADSENSE_CLIENT.endsWith('0000000000000000')
+
+const pushAdRequest = () => {
+  if (typeof window === 'undefined') return
+  try {
+    ;(window.adsbygoogle = window.adsbygoogle || []).push({})
+  } catch (error) {
+    console.warn('AdSense push error:', error)
+  }
+}
+
+const useAdSenseLoader = () => {
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isAdClientConfigured) {
+      return
+    }
+    const existingScript = document.querySelector('script[data-adsbygoogle-status]')
+    if (existingScript) {
+      setReady(true)
+      return
+    }
+    const script = document.createElement('script')
+    script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`
+    script.async = true
+    script.crossOrigin = 'anonymous'
+    script.dataset.adsbygoogleStatus = 'loading'
+    script.onload = () => {
+      script.dataset.adsbygoogleStatus = 'ready'
+      setReady(true)
+    }
+    script.onerror = () => {
+      script.dataset.adsbygoogleStatus = 'error'
+      setReady(false)
+    }
+    document.head.appendChild(script)
+
+    return () => {
+      if (script.parentNode) {
+        document.head.removeChild(script)
+      }
+    }
+  }, [])
+
+  return ready && isAdClientConfigured
+}
+
+const AdSlot = ({
+  ready,
+  type = 'display',
+  className = '',
+  label = 'Sponsored placement',
+  style = {},
+  format,
+  layout,
+  fullWidthResponsive,
+}) => {
+  const config = adConfig[type] ?? adConfig.display
+  const finalFormat = format ?? config.format ?? 'auto'
+  const finalLayout = layout ?? config.layout
+  const finalResponsive =
+    typeof fullWidthResponsive === 'boolean' ? fullWidthResponsive : config.fullWidthResponsive ?? true
+  const finalStyle = { ...(config.style ?? {}), ...style }
+
+  const containerRef = useRef(null)
+
+  useEffect(() => {
+    if (!ready || !containerRef.current) {
+      return
+    }
+    const timeout = setTimeout(() => {
+      const ins = containerRef.current?.querySelector('ins.adsbygoogle')
+      if (ins) {
+        pushAdRequest()
+      }
+    }, 200)
+    return () => clearTimeout(timeout)
+  }, [ready, slot])
+
+  if (!ready) {
+    return null
+  }
+
+  return (
+    <div className={`ad-slot ${className}`.trim()} ref={containerRef} role="complementary" aria-label={label}>
+      <ins
+        className="adsbygoogle"
+        style={finalStyle}
+        data-ad-client={ADSENSE_CLIENT}
+        data-ad-slot={config.slot}
+        data-ad-format={finalFormat}
+        data-full-width-responsive={finalResponsive ? 'true' : 'false'}
+        {...(finalLayout ? { 'data-ad-layout': finalLayout } : {})}
+      />
+      </div>
+  )
+}
+
+const PopupAd = ({ ready, visible, onClose, contentRef, refreshKey = 0 }) => {
+  if (!visible || !ready) {
+    return null
+  }
+
+  return (
+    <div className="ad-popup" role="dialog" aria-modal="true">
+      <div className="ad-popup__backdrop" onClick={onClose} />
+      <div className="ad-popup__content" ref={contentRef}>
+        <button type="button" className="ad-popup__close" onClick={onClose} aria-label="Chiudi annuncio">
+          ×
+        </button>
+        <AdSlot
+          key={refreshKey}
+          ready={ready}
+          type="popup"
+          className="ad-slot--popup"
+          label={AD_LABELS.popup}
+          format={adConfig.popup.format}
+          style={adConfig.popup.style}
+        />
+      </div>
+    </div>
+  )
+}
 
 const generateId = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -716,6 +890,124 @@ const sampleQuestion = {
   timeLimit: 10,
 }
 
+const termsSections = [
+  {
+    title: '1. Accettazione dei Termini',
+    paragraphs: [
+      'Accedendo o utilizzando QuizRush accetti integralmente questi Termini & Condizioni.',
+      'Se non accetti uno o più punti, interrompi immediatamente l’utilizzo del servizio.',
+    ],
+  },
+  {
+    title: '2. Idoneità e Account',
+    paragraphs: [
+      'Devi avere almeno 16 anni per creare un profilo e partecipare alle competizioni.',
+      'Se fornisci dati non corretti o incompleti, ci riserviamo il diritto di sospendere l’account.',
+    ],
+  },
+  {
+    title: '3. Uso Consentito',
+    paragraphs: [
+      'QuizRush è destinato a finalità ricreative ed educative. È vietato l’uso fraudolento o automatizzato.',
+      'Non puoi tentare di aggirare il sistema di punteggi, interferire con altri utenti o utilizzare exploit.',
+    ],
+  },
+  {
+    title: '4. Contenuti e Proprietà Intellettuale',
+    paragraphs: [
+      'Tutte le domande, i layout e gli asset grafici sono protetti da copyright e concessi in licenza.',
+      'È vietata la riproduzione, la distribuzione o la modifica dei contenuti senza consenso scritto.',
+    ],
+  },
+  {
+    title: '5. Sistema di Punti e Premi',
+    paragraphs: [
+      'Le monete virtuali non hanno valore monetario e non possono essere scambiate per denaro reale.',
+      'Ci riserviamo il diritto di modificare i criteri di assegnazione dei punti e i premi virtuali.',
+    ],
+  },
+  {
+    title: '6. Limitazioni di Responsabilità',
+    paragraphs: [
+      'Il servizio è fornito “così com’è” senza garanzie di continuità o disponibilità delle competizioni.',
+      'Non rispondiamo di eventuali perdite economiche legate a decisioni prese sulla base dei quiz.',
+    ],
+  },
+  {
+    title: '7. Modifiche ai Termini',
+    paragraphs: [
+      'Possiamo aggiornare i Termini in qualsiasi momento. Le modifiche entrano in vigore con la pubblicazione.',
+      'L’uso continuato del servizio dopo gli aggiornamenti implica accettazione delle nuove condizioni.',
+    ],
+  },
+  {
+    title: '8. Contatti',
+    paragraphs: [
+      'Per dubbi o richieste scrivi a legal@quizrush.com oppure support@viralnews360.net.',
+      'Rispondiamo tipicamente entro 48 ore lavorative.',
+    ],
+  },
+]
+
+const privacySections = [
+  {
+    title: '1. Informazioni Raccolte',
+    paragraphs: [
+      'Raccogliamo nome, email o numero di telefono e preferenze di gioco per erogare i servizi.',
+      'Registriamo inoltre log tecnici (IP, device, evento di quiz) per prevenire abusi e migliorare la piattaforma.',
+    ],
+  },
+  {
+    title: '2. Uso dei Dati',
+    paragraphs: [
+      'I dati servono a fornire il matchmaking, calcolare statistiche, mostrare classifiche e migliorare i contenuti.',
+      'Non vendiamo i tuoi dati personali. Possiamo condividere informazioni aggregate con partner pubblicitari.',
+    ],
+  },
+  {
+    title: '3. Cookie e Tecnologie Simili',
+    paragraphs: [
+      'Utilizziamo cookie funzionali per mantenere la sessione e cookie analitici per misurare l’engagement.',
+      'Puoi gestire le preferenze tramite le impostazioni del browser, con possibili limitazioni di esperienza.',
+    ],
+  },
+  {
+    title: '4. Conservazione',
+    paragraphs: [
+      'Conserviamo i dati fintanto che l’account rimane attivo o quanto necessario per obblighi legali.',
+      'Su richiesta, cancelliamo o anonimizziamo i dati compatibilmente con le normative applicabili.',
+    ],
+  },
+  {
+    title: '5. Sicurezza',
+    paragraphs: [
+      'Applichiamo cifratura in transito, controlli di accesso e monitoraggio costante per proteggere le informazioni.',
+      'Nessuna misura è infallibile: in caso di violazioni notifichiamo gli utenti secondo legge.',
+    ],
+  },
+  {
+    title: '6. Diritti degli Utenti',
+    paragraphs: [
+      'Puoi chiedere accesso, rettifica o cancellazione dei dati contattando privacy@quizrush.com.',
+      'Potresti dover fornire documentazione per verificare la tua identità prima di evadere la richiesta.',
+    ],
+  },
+  {
+    title: '7. Trasferimenti Internazionali',
+    paragraphs: [
+      'I dati possono essere trattati su server localizzati in UE, USA o altre regioni con adeguate garanzie.',
+      'In caso di trasferimenti extra-UE, adottiamo clausole standard e misure supplementari di protezione.',
+    ],
+  },
+  {
+    title: '8. Aggiornamenti della Privacy',
+    paragraphs: [
+      'Questa informativa può evolvere. Pubblicheremo la nuova data di versione e, ove richiesto, avviseremo via email.',
+      'L’uso continuato del servizio implica accettazione delle modifiche.',
+    ],
+  },
+]
+
 const formatCountdown = (targetDate) => {
   const distance = targetDate.getTime() - Date.now()
   if (distance <= 0) {
@@ -739,8 +1031,10 @@ const buttonTextByType = {
   referral: 'Referral',
 }
 
-function App() {
-  const [activeTab, setActiveTab] = useState('home')
+function AppShell() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const currentPath = location.pathname || '/'
   const [user, setUser] = useState(initialUser)
   const [wallet, setWallet] = useState(walletSeed)
   const [selectedTournament, setSelectedTournament] = useState(tournaments[0])
@@ -753,7 +1047,61 @@ function App() {
   const [quizState, setQuizState] = useState(() => ({ ...blankQuizState }))
   const [answerFeedback, setAnswerFeedback] = useState(null)
   const nextQuestionTimeout = useRef(null)
+  const adsReady = useAdSenseLoader()
+  const popupContentRef = useRef(null)
+  const [popupVisible, setPopupVisible] = useState(false)
+  const [popupRefresh, setPopupRefresh] = useState(0)
   const isPlayMode = Boolean(currentQuiz && quizState.status !== 'idle')
+
+  const triggerPopup = useCallback(() => {
+    if (!adsReady) {
+      return
+    }
+    setPopupVisible(true)
+    setPopupRefresh((prev) => prev + 1)
+  }, [adsReady])
+
+  const closePopup = useCallback(() => {
+    setPopupVisible(false)
+  }, [])
+
+  useEffect(() => {
+    if (!adsReady) {
+      setPopupVisible(false)
+      return
+    }
+    const handleDocumentClick = (event) => {
+      if (popupContentRef.current && popupContentRef.current.contains(event.target)) {
+        return
+      }
+      triggerPopup()
+    }
+    document.addEventListener('click', handleDocumentClick)
+    return () => document.removeEventListener('click', handleDocumentClick)
+  }, [adsReady, triggerPopup])
+
+  const renderAdCluster = useCallback(
+    (variant = 'standard', className = '') => {
+      const types = AD_CLUSTER_PRESETS[variant] ?? AD_CLUSTER_PRESETS.standard
+      if (!adsReady) {
+        return null
+      }
+      return (
+        <div className={`ad-cluster ${className}`.trim()}>
+          {types.map((type, index) => (
+            <AdSlot
+              key={`${variant}-${type}-${index}`}
+              ready={adsReady}
+              type={type}
+              className="ad-slot--cluster-item"
+              label={AD_LABELS[type] ?? 'Sponsored placement'}
+            />
+          ))}
+        </div>
+      )
+    },
+    [adsReady],
+  )
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -834,7 +1182,7 @@ function App() {
         setSelectedTournament(linkedTournament)
       }
     }
-    setActiveTab('live')
+    navigate('/live')
     triggerToast(`Loaded ${quiz.title}. Good luck!`)
   }
 
@@ -857,7 +1205,7 @@ function App() {
     setCurrentQuiz(null)
     setQuizState({ ...blankQuizState })
     setAnswerFeedback(null)
-    setActiveTab('home')
+    navigate('/')
   }
 
   const handleOptionSelect = useCallback(
@@ -1022,7 +1370,7 @@ function App() {
 
   const handleJoinTournament = (tournament) => {
     setSelectedTournament(tournament)
-    setActiveTab('live')
+    navigate('/live')
     if (tournament.linkedQuizId) {
       startQuiz(tournament.linkedQuizId, { focusTournament: tournament })
     } else {
@@ -1056,7 +1404,7 @@ function App() {
             <h2>{summary.quizTitle} results</h2>
             <p>
               You answered <strong>{summary.correct}</strong> of {summary.totalQuestions} questions correctly.
-            </p>
+        </p>
       </div>
           <div className="summary-grid">
             <article className="summary-card">
@@ -1077,6 +1425,8 @@ function App() {
               <p>Speed matters — keep the streak alive!</p>
             </article>
           </div>
+        {renderAdCluster('standard', 'summary-ad-cluster')}
+        {renderAdCluster('wide', 'summary-wide-cluster')}
           <div className="summary-answers">
             {summary.answers.map((answer, index) => (
               (() => {
@@ -1129,7 +1479,7 @@ function App() {
               className="ghost-button"
               onClick={() => {
                 handleExitQuiz()
-                setActiveTab('leaderboard')
+                navigate('/leaderboard')
               }}
             >
               View leaderboard
@@ -1138,7 +1488,7 @@ function App() {
               className="link-button"
               onClick={() => {
                 handleExitQuiz()
-                setActiveTab('home')
+                navigate('/')
               }}
             >
               ← Back to home
@@ -1198,6 +1548,9 @@ function App() {
         <div className="timer-info">
           <span>{quizState.remainingTime}s left</span>
         </div>
+
+        {renderAdCluster('standard', 'play-ad-cluster')}
+        {renderAdCluster('wide', 'play-wide-cluster')}
 
         <div className="question-body">
           <h3 className="question-title">{currentQuestion.prompt}</h3>
@@ -1261,10 +1614,10 @@ function App() {
               pro-level insights and sponsor-ready rewards.
             </p>
             <div className="hero-buttons">
-              <button className="primary-button" onClick={() => setActiveTab('live')}>
+              <button className="primary-button" onClick={() => navigate('/live')}>
                 Enter Live Lobby
               </button>
-              <button className="ghost-button" onClick={() => setActiveTab('dashboard')}>
+              <button className="ghost-button" onClick={() => navigate('/dashboard')}>
                 View My Arena
               </button>
       </div>
@@ -1282,6 +1635,7 @@ function App() {
                 <span>Community rating</span>
               </div>
             </div>
+            {renderAdCluster('wide', 'hero-ad-cluster')}
           </div>
           <div className="hero-showcase float-up">
             <div className="countdown-card">
@@ -1313,6 +1667,8 @@ function App() {
           </div>
         </div>
       </section>
+      {renderAdCluster('wide', 'home-hero-wide-cluster')}
+      {renderAdCluster('square', 'home-spotlight-cluster')}
 
       <section className="panel section" aria-labelledby="categories-heading">
         <div className="section-heading">
@@ -1368,6 +1724,9 @@ function App() {
             )
           })}
         </div>
+        {renderAdCluster('stacked', 'category-ad-cluster')}
+        {renderAdCluster('wide', 'category-banner-cluster')}
+        {renderAdCluster('square', 'category-square-secondary')}
       </section>
 
       <section className="panel section" aria-labelledby="schedule-heading">
@@ -1399,6 +1758,9 @@ function App() {
             )
           })}
         </div>
+        {renderAdCluster('wide', 'schedule-ad-cluster')}
+        {renderAdCluster('square', 'schedule-square-cluster')}
+        {renderAdCluster('wide', 'schedule-wide-secondary')}
       </section>
 
       <section className="panel section" aria-labelledby="instant-heading">
@@ -1424,7 +1786,13 @@ function App() {
             </button>
           ))}
         </div>
+        {renderAdCluster('standard', 'instant-ad-cluster')}
+        {renderAdCluster('wide', 'instant-wide-cluster')}
+        {renderAdCluster('square', 'instant-square-cluster')}
       </section>
+      {renderAdCluster('wide', 'home-bottom-wide')}
+      {renderAdCluster('square', 'home-bottom-square')}
+      {renderAdCluster('stacked', 'home-bottom-stacked')}
     </>
   )
 
@@ -1437,6 +1805,7 @@ function App() {
       </div>
       <div className="live-grid">
         <article className="live-detail">
+          {renderAdCluster('wide', 'live-detail-banner')}
           <header>
             <span className="pill" style={{ backgroundColor: selectedTournament.color }}>
               {selectedTournament.prizePool}
@@ -1477,6 +1846,7 @@ function App() {
               Invite squad
             </button>
           </div>
+          {renderAdCluster('square', 'live-detail-square-cluster')}
         </article>
         <article className="live-demo">
           <div className="live-demo-header">
@@ -1503,8 +1873,14 @@ function App() {
               Watch how it works →
             </button>
           </div>
+          {renderAdCluster('wide', 'live-demo-banner')}
         </article>
+        <aside className="live-ads">{renderAdCluster('stacked', 'live-ad-cluster')}</aside>
       </div>
+      {renderAdCluster('wide', 'live-bottom-banner')}
+      {renderAdCluster('square', 'live-bottom-square')}
+      {renderAdCluster('wide', 'live-extra-wide')}
+      {renderAdCluster('square', 'live-extra-square')}
       <div className="tournament-carousel">
         {tournaments.map((tournament) => (
           <button
@@ -1556,15 +1932,20 @@ function App() {
           ))}
         </div>
       </div>
+      {renderAdCluster('standard', 'leaderboard-ad-cluster')}
+      {renderAdCluster('square', 'leaderboard-square-cluster')}
+      {renderAdCluster('wide', 'leaderboard-wide-cluster')}
       <div className="cta-banner">
         <div>
           <h3>Ready to top the trading floor?</h3>
           <p>Hit streaks, complete finance missions, and unlock exclusive analyst-grade badges.</p>
         </div>
-        <button className="primary-button" onClick={() => setActiveTab('dashboard')}>
+        <button className="primary-button" onClick={() => navigate('/dashboard')}>
           View missions
         </button>
       </div>
+      {renderAdCluster('wide', 'leaderboard-footer-wide')}
+      {renderAdCluster('square', 'leaderboard-footer-square')}
     </section>
   )
 
@@ -1575,6 +1956,7 @@ function App() {
         <h2 id="dashboard-heading">Welcome back, {user.name.split(' ')[0]}!</h2>
         <p>Review quiz alpha, manage tokens, and unlock pro missions tailored to your financial edge.</p>
       </div>
+      {renderAdCluster('wide', 'dashboard-banner-cluster')}
       <div className="dashboard-grid">
         <article className="profile-card glass">
           <div className="profile-header">
@@ -1652,26 +2034,61 @@ function App() {
           </button>
         </article>
       </div>
+      {renderAdCluster('square', 'dashboard-square-cluster')}
+      {renderAdCluster('stacked', 'dashboard-ad-cluster')}
+      {renderAdCluster('wide', 'dashboard-wide-extra')}
     </section>
   )
 
-  const renderContent = () => {
-    if (isPlayMode) {
-      return renderPlay()
-    }
-    switch (activeTab) {
-      case 'home':
-        return renderHome()
-      case 'live':
-        return renderLive()
-      case 'leaderboard':
-        return renderLeaderboard()
-      case 'dashboard':
-        return renderDashboard()
-      default:
-        return renderHome()
-    }
-  }
+  const renderTerms = () => (
+    <section className="panel section legal-panel" aria-labelledby="terms-heading">
+      <div className="section-heading">
+        <span className="eyebrow">Legal center</span>
+        <h2 id="terms-heading">Termini & Condizioni</h2>
+        <p>Regole di utilizzo, responsabilità e diritti per l’esperienza quiz competitiva di QuizRush.</p>
+      </div>
+      {renderAdCluster('wide', 'terms-top-banner')}
+      <div className="legal-grid">
+        {termsSections.map((section, index) => (
+          <article key={section.title} className="legal-card glass">
+            <h3>{section.title}</h3>
+            {section.paragraphs.map((paragraph) => (
+              <p key={paragraph.slice(0, 24)}>{paragraph}</p>
+            ))}
+            {index % 2 === 0 ? renderAdCluster('square', `terms-square-${index}`) : renderAdCluster('wide', `terms-wide-${index}`)}
+          </article>
+        ))}
+      </div>
+      {renderAdCluster('stacked', 'terms-mid-stacked')}
+      {renderAdCluster('wide', 'terms-bottom-banner')}
+      {renderAdCluster('square', 'terms-bottom-square')}
+    </section>
+  )
+
+  const renderPrivacy = () => (
+    <section className="panel section legal-panel" aria-labelledby="privacy-heading">
+      <div className="section-heading">
+        <span className="eyebrow">Legal center</span>
+        <h2 id="privacy-heading">Informativa Privacy</h2>
+        <p>Trasparenza su trattamento dati, sicurezza e opzioni di controllo per la community di QuizRush.</p>
+      </div>
+      {renderAdCluster('wide', 'privacy-top-banner')}
+      <div className="legal-grid">
+        {privacySections.map((section, index) => (
+          <article key={section.title} className="legal-card glass">
+            <h3>{section.title}</h3>
+            {section.paragraphs.map((paragraph) => (
+              <p key={paragraph.slice(0, 24)}>{paragraph}</p>
+            ))}
+            {index % 2 === 1 ? renderAdCluster('square', `privacy-square-${index}`) : renderAdCluster('wide', `privacy-wide-${index}`)}
+          </article>
+        ))}
+      </div>
+      {renderAdCluster('stacked', 'privacy-mid-stacked')}
+      {renderAdCluster('wide', 'privacy-bottom-banner')}
+      {renderAdCluster('square', 'privacy-bottom-square')}
+    </section>
+  )
 
   return (
     <div className="page">
@@ -1684,13 +2101,18 @@ function App() {
           <span className="brand-name">QuizRush</span>
         </div>
         <nav className="topbar-nav" aria-label="Primary">
-          {['home', 'live', 'leaderboard', 'dashboard'].map((tab) => (
+          {[
+            { label: 'home', path: '/' },
+            { label: 'live', path: '/live' },
+            { label: 'leaderboard', path: '/leaderboard' },
+            { label: 'dashboard', path: '/dashboard' },
+          ].map((tab) => (
             <button
-              key={tab}
-              className={activeTab === tab ? 'nav-link nav-link--active' : 'nav-link'}
-              onClick={() => setActiveTab(tab)}
+              key={tab.path}
+              className={currentPath === tab.path ? 'nav-link nav-link--active' : 'nav-link'}
+              onClick={() => navigate(tab.path)}
             >
-              {tab}
+              {tab.label}
             </button>
           ))}
         </nav>
@@ -1706,34 +2128,66 @@ function App() {
         </div>
       </header>
 
-      <main>{renderContent()}</main>
+      <main>
+        {renderAdCluster('wide', 'main-top-wide-cluster')}
+        {renderAdCluster('square', 'main-top-square-cluster')}
+        {isPlayMode ? (
+          renderPlay()
+        ) : (
+          <Routes>
+            <Route path="/" element={renderHome()} />
+            <Route path="/live" element={renderLive()} />
+            <Route path="/leaderboard" element={renderLeaderboard()} />
+            <Route path="/dashboard" element={renderDashboard()} />
+            <Route path="/terms" element={renderTerms()} />
+            <Route path="/privacy" element={renderPrivacy()} />
+            <Route path="*" element={renderHome()} />
+          </Routes>
+        )}
+        {renderAdCluster('wide', 'main-interstitial-ad-cluster')}
+        {renderAdCluster('square', 'main-interstitial-square-cluster')}
+      </main>
 
       <footer className="footer">
-        <div>
-          <strong>QuizRush • React Edition</strong>
-          <p>Built for live trivia, streaming-ready tournaments, and sponsor activations.</p>
-        </div>
         <div className="footer-links">
           {[
             { label: 'Community', message: 'Community hub launches soon — stay tuned!' },
             { label: 'Partner with us', message: 'Partnership deck available on request. Email biz@quizrush.com.' },
             { label: 'Ad policy', message: 'Our monetization guidelines are being finalized for the finance launch.' },
-            { label: 'Support', message: 'Need help? Reach out at support@quizrush.com.' },
+            { label: 'Terms & Conditions', action: () => navigate('/terms') },
+            { label: 'Privacy Policy', action: () => navigate('/privacy') },
+            { label: 'Support', message: 'Need help? Reach out at support@viralnews360.net.' },
           ].map((item) => (
             <button
               key={item.label}
               type="button"
               className="footer-link"
-              onClick={() => triggerToast(item.message)}
+              onClick={() => (item.action ? item.action() : triggerToast(item.message))}
             >
               {item.label}
             </button>
           ))}
         </div>
+        {renderAdCluster('stacked', 'footer-ad-cluster')}
       </footer>
 
       {showToast && <div className="toast">{showToast}</div>}
+      <PopupAd
+        ready={adsReady}
+        visible={popupVisible}
+        onClose={closePopup}
+        contentRef={popupContentRef}
+        refreshKey={popupRefresh}
+      />
     </div>
+  )
+}
+
+function App() {
+  return (
+    <Router>
+      <AppShell />
+    </Router>
   )
 }
 
